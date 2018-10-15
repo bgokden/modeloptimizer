@@ -18,6 +18,8 @@ from keras.regularizers import L1L2
 from keras.callbacks import EarlyStopping
 from keras.layers import Input, LSTM, RepeatVector
 from keras.models import Model
+from keras.models import load_model
+
 # import pickle
 import numpy as np
 import gc
@@ -34,10 +36,10 @@ current_milli_time = lambda: int(round(time.time() * 1000))
 test_url = "mongodb://automl:automl1234@ds111913.mlab.com:11913/modeldb"
 db_name = "modeldb" # same as db name
 # There will be two tables, project, models
-projects_table_name = "project1" # will keep configuration for a project
+projects_table_name = "projects" # will keep configuration for a project
 models_table_name = "models" # will be used for table
 data_host = "localhost:10000"
-project_name = "sentencevectors"
+project_name = "sentencevectors0"
 
 client = MongoClient(test_url)
 db=client[db_name]
@@ -79,7 +81,7 @@ def getOrCreateBestTwoModels():
         seed_models.append(model)
     if len(seed_models) < 2:
         print('models are empty')
-    return models
+    return seed_models
 
 
 def saveKerasModel(project_name, loss, hyperparameters, keras_model):
@@ -110,8 +112,8 @@ def readKerasModel(files):
     out = fs.get(files[0])
     dirpath = tempfile.mkdtemp()
     path = dirpath+"/modelfile.h5"
-    model_file = open(path,'w')
-    model_file.write(out)
+    model_file = open(path,'wb')
+    model_file.write(out.read())
     model_file.close()
     model = load_model(path)
     shutil.rmtree(dirpath)
@@ -140,8 +142,8 @@ def getData(host):
         labels.append(datum.label)
         # print(len(datum.feature), datum.label)
         data_counter += 1
-        if data_counter > 1000:
-            break
+        #if data_counter > 1000:
+        #    break
     print("data size:",data_counter)
     return np.array(features),np.array(labels)
 
@@ -198,7 +200,7 @@ def generateModels(project_conf):
     for model in seed_models:
         models_to_train.append({
             'hyperparameters': model['model_settings']['hyperparameters'],
-            model: readKerasModel(model.files)
+            'model': readKerasModel(model['files'])
         })
         hps.append(model['model_settings']['hyperparameters'])
         loss_scores.append(model['loss'])
@@ -242,16 +244,6 @@ def trainCurrentModels(project_conf):
     len_features = len(features)
     hsplit = int(np.ceil(len_features*0.7))
     indexes = np.random.choice(len_features, len_features, replace=False)
-    data_counter = 0
-    for feature in features:
-        print(len(feature), labels[data_counter])
-        data_counter += 1
-    # seed_models = getOrCreateBestTwoModels()
-    # hps = initial_seeds
-    # loss_scores = initial_loss_scores
-    # loss_scores = []
-    # best = []
-    # best_loss_score = sys.float_info.max
     models_to_train = generateModels(project_conf)
     for model_to_train in models_to_train:
         model =  model_to_train['model']
