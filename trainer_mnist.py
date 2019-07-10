@@ -1,4 +1,4 @@
-from trainer import Trainer
+from veripupil.trainer import Trainer
 import os
 
 from numpy import array
@@ -16,7 +16,7 @@ from keras.models import load_model
 from keras.layers.core import Dense, Dropout, Activation
 from keras.utils import np_utils
 
-from hyperparameters import HyperparameterSet
+from veripupil.hyperparameters import HyperparameterSet
 
 def getModel(hps = HyperparameterSet()):
     model = Sequential()
