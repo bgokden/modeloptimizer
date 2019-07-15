@@ -137,11 +137,14 @@ class HyperparameterSet:
 
     def randomized(self, with_delete = True):
         hps = copy.deepcopy(self.hps)
+        delete_list = []
         for key in hps:
             if with_delete and random.random() < 0.2:
-                hps.pop(key)
+                delete_list.append(key)
             else:
                 hps[key].randomize()
+        for key in delete_list:
+            hps.pop(key, None)
         return HyperparameterSet(hps)
 
     def cross_merge(self, other):

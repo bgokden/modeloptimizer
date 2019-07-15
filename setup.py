@@ -10,7 +10,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(name='veripupil',
-      version='0.0.3',
+      version='0.0.11',
       description='Python classes for optimizing models against veri',
       long_description=long_description,
       long_description_content_type='text/markdown',

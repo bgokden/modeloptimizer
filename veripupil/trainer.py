@@ -63,6 +63,9 @@ class Trainer:
         self.sequence_length_one = sequence_length_one
         self.feature_dimension_two = feature_dimension_two
         self.sequence_length_two = sequence_length_two
+        self.feature_length = (self.feature_dimension_one  * self.sequence_length_one) + (self.feature_dimension_two * self.sequence_length_two)
+        print("seq2seq:", self.seq2seq)
+        print("Dimensions: ", self.feature_dimension_one, self.sequence_length_one, self.feature_dimension_two, self.sequence_length_two )
 
     def kerasModelToFileIds(self, model):
         fileIds = {}
@@ -196,7 +199,7 @@ class Trainer:
         features = []
         labels = []
         for datum in data:
-            features.append(datum.feature[:(self.feature_dimension*self.sequence_length)])
+            features.append(datum.feature[:(self.feature_length)])
             labels.append(datum.label)
             # print(len(datum.feature), datum.label)
             data_counter += 1
@@ -207,18 +210,35 @@ class Trainer:
 
     def getTrainData(self, features, labels, indexes, hsplit):
         idx = indexes[:hsplit]
-        # print(np.shape(features))
-        features = np.pad(features, ((0,0),(0,(self.feature_dimension*self.sequence_length)-np.shape(features)[1])), 'constant', constant_values=(0))
-        first = array(features)[idx].reshape((len(idx), self.sequence_length, self.feature_dimension))
-        second = array(labels)[idx].reshape((len(idx), 1, 1))
+        if self.seq2seq :
+            length1 = self.sequence_length_one*self.feature_dimension_one
+            length2 = self.sequence_length_two*self.feature_dimension_two
+            features = np.pad(features, ((0,0),(0,self.feature_length-np.shape(features)[1])), 'constant', constant_values=(0))
+            features1 = features[:,:length1]
+            first = array(features1)[idx].reshape((len(idx), self.sequence_length_one, self.feature_dimension_one))
+            features2 = features[:,-length2:]
+            second = array(features2)[idx].reshape((len(idx), self.sequence_length_two, self.feature_dimension_two))
+        else:
+            features = np.pad(features, ((0,0),(0,self.feature_length-np.shape(features)[1])), 'constant', constant_values=(0))
+            first = array(features)[idx].reshape((len(idx), self.sequence_length_one, self.feature_dimension_one))
+            second = array(labels)[idx].reshape((len(idx), 1, 1))
         return self.transform_function(first, second)
 
 
     def getTestData(self, features, labels, indexes, hsplit):
         idx = indexes[hsplit:]
-        features = np.pad(features, ((0,0),(0,(self.feature_dimension*self.sequence_length)-np.shape(features)[1])), 'constant', constant_values=(0))
-        first = array(features)[idx].reshape((len(idx), self.sequence_length, self.feature_dimension))
-        second = array(labels)[idx].reshape((len(idx), 1, 1))
+        if self.seq2seq :
+            length1 = self.sequence_length_one*self.feature_dimension_one
+            length2 = self.sequence_length_two*self.feature_dimension_two
+            features = np.pad(features, ((0,0),(0,self.feature_length-np.shape(features)[1])), 'constant', constant_values=(0))
+            features1 = features[:,:length1]
+            first = array(features1)[idx].reshape((len(idx), self.sequence_length_one, self.feature_dimension_one))
+            features2 = features[:,-length2:]
+            second = array(features2)[idx].reshape((len(idx), self.sequence_length_two, self.feature_dimension_two))
+        else:
+            features = np.pad(features, ((0,0),(0,self.feature_length-np.shape(features)[1])), 'constant', constant_values=(0))
+            first = array(features)[idx].reshape((len(idx), self.sequence_length_one, self.feature_dimension_one))
+            second = array(labels)[idx].reshape((len(idx), 1, 1))
         return self.transform_function(first, second)
 
     def iterative_learning_function(self, X, y, iteration):
